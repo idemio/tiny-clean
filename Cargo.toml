@@ -1,0 +1,27 @@
+[package]
+name = "tiny-clean"
+version = "0.1.0"
+edition = "2024"
+description = "A lightweight, high-performance string sanitizer with configurable rules."
+
+categories = ["algorithms", "development-tools", "text-processing"]
+
+keywords = ["text", "sanitizer", "encoder", "string-manipulation", "utility"]
+readme = "README.md"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = "symbols"
+opt-level = 3
+
+[dependencies]
+log = "0.4.27"
+fnv = "1.0.7"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "encode_benchmarks"
+harness = false
