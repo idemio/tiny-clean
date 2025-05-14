@@ -10,8 +10,6 @@ keywords = ["text", "sanitizer", "encoder", "string-manipulation", "utility"]
 readme = "README.md"
 
 [profile.release]
-lto = true
-codegen-units = 1
 strip = "symbols"
 opt-level = 3
 

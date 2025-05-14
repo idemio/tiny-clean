@@ -281,7 +281,10 @@ where
         let mut valid_mask = [u32::MAX; 8];
         let mut replace_chars: FnvHashMap<char, &'static str> = FnvHashMap::default();
         let mut encode_chars: FnvHashMap<char, EncodeOption> = FnvHashMap::default();
+
+        // Track the longest replacement string. This ensures the output buffer is appropriately sized.
         let mut largest_replace = 1usize;
+
         for rule in rules {
             match rule {
                 Rule::Range {
@@ -290,7 +293,7 @@ where
                     exclude,
                     rule_type,
                 } => {
-                    assert!((start as u32) < (end as u32));
+                    assert!((start as u32) < (end as u32), "End character should be larger than the starting character.");
 
                     // all ascii and extended ascii
                     if (start as u32) < 256 && (end as u32) < 256 {
@@ -299,10 +302,16 @@ where
                                 simple: simple_escape,
                                 min: min_len,
                             } => {
+
+                                // Process all characters in the range, unless they are in the exclusion list.
                                 for char in start..end {
                                     if exclude.as_ref().is_some_and(|excl| excl.contains(&char)) {
                                         continue;
                                     }
+
+                                    // Determine which bucket (segment) this character belongs to.
+                                    // Generate a bitmask for the character.
+                                    // Update the valid_mask to mark this character as encoded.
                                     let bucket: usize = char_bucket(char);
                                     let char_mask: u32 = !char_mask(char);
                                     valid_mask[bucket] &= char_mask;
@@ -320,7 +329,13 @@ where
                                     if exclude.as_ref().is_some_and(|excl| excl.contains(&char)) {
                                         continue;
                                     }
+
+                                    // Update the maximum length of a replacement string for buffer allocation.
                                     largest_replace = largest_replace.max(replace_string.len());
+
+                                    // Determine which bucket (segment) this character belongs to.
+                                    // Generate a bitmask for the character.
+                                    // Update the valid_mask to mark this character as encoded.
                                     let bucket: usize = char_bucket(char);
                                     let char_mask: u32 = !char_mask(char);
                                     valid_mask[bucket] &= char_mask;
@@ -352,6 +367,8 @@ where
                                     if exclude.as_ref().is_some_and(|excl| excl.contains(&char)) {
                                         continue;
                                     }
+
+                                    // Update the maximum length of a replacement string for buffer allocation.
                                     largest_replace = largest_replace.max(replace_string.len());
                                     replace_chars.insert(char, replace_string);
                                 }
@@ -489,9 +506,13 @@ where
                         if character as u32 <= 0xFF {
                             Self::encode_as_hex_byte(self.escape_char(), &mut output, character);
                             continue;
+                        } else {
+                            Self::encode_as_unicode(self.escape_char(), &mut output, character);
+                            continue;
                         }
-
-                        Self::encode_as_unicode(self.escape_char(), &mut output, character);
+                    } else if self.compiled_rules().replace_map.contains_key(&character) {
+                        let replace = self.compiled_rules().replace_map.get(&character).unwrap();
+                        output.push_str(replace);
                         continue;
                     }
                 } else {
@@ -501,22 +522,29 @@ where
                                 output.push(character);
                                 continue;
                             }
-                        }
+                        },
                         _ => {}
                     }
                 }
-            }
-            if self.compiled_rules().replace_map.contains_key(&character) {
+            } else if self.compiled_rules().replace_map.contains_key(&character) {
                 let replace = self.compiled_rules().replace_map.get(&character).unwrap();
                 output.push_str(replace);
                 continue;
             }
+
             match self.ascii_properties() {
                 ValidAsciiRange::NoRestrict => {
                     output.push(character);
                 }
-                _ => {
-                    if character as u32 <= 0xFF {
+                ValidAsciiRange::ASCIIExtended => {
+                    if (character as u32) > 127 {
+                        Self::encode_as_unicode(self.escape_char(), &mut output, character);
+                    } else {
+                        output.push(character);
+                    }
+                },
+                ValidAsciiRange::ASCII => {
+                    if character as u32 <= 127 {
                         Self::encode_as_hex_byte(self.escape_char(), &mut output, character);
                     } else {
                         Self::encode_as_unicode(self.escape_char(), &mut output, character);
