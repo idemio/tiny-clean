@@ -48,32 +48,32 @@ impl Encoder<JavaScriptEncoderSettings> for JavaScriptEncoder {
                         rt: RuleType::Sub("\\r"),
                     },
                     Rule::Uni {
+                        ch: '\u{2028}',
+                        rt: RuleType::Esc(true)
+                    },
+                    Rule::Uni {
+                        ch: '\u{2029}',
+                        rt: RuleType::Esc(true)
+                    },
+                    Rule::Uni {
                         ch: '\u{0000}',
-                        rt: RuleType::Esc {
-                            min: true,
-                            simple: false,
-                        },
+                        rt: RuleType::Esc(false),
                     },
                     Rule::Uni {
                         ch: '"',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                     Rule::Uni {
                         ch: '\'',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                     Rule::Uni {
                         ch: '\\',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
+                    },
+                    Rule::Uni {
+                        ch: '&',
+                        rt: RuleType::Esc(false),
                     },
                 ];
                 let compiled_rules = Self::compile_encoder_rules(rules);
@@ -83,7 +83,7 @@ impl Encoder<JavaScriptEncoderSettings> for JavaScriptEncoder {
                     invalid_char: ' ',
                     ascii_properties: valid_ascii_range,
                 }
-            },
+            }
             JavaScriptEncoderMode::Block => {
                 let rules = [
                     Rule::Uni {
@@ -108,52 +108,39 @@ impl Encoder<JavaScriptEncoderSettings> for JavaScriptEncoder {
                     },
                     Rule::Uni {
                         ch: '\u{0000}',
-                        rt: RuleType::Esc {
-                            min: true,
-                            simple: false,
-                        },
+                        rt: RuleType::Esc(false),
                     },
                     Rule::Uni {
                         ch: '/',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
+                    },
+                    Rule::Uni {
+                      ch: '\u{2028}',
+                        rt: RuleType::Esc(true)
+                    },
+                    Rule::Uni {
+                        ch: '\u{2029}',
+                        rt: RuleType::Esc(true)
                     },
                     Rule::Uni {
                         ch: '-',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                     Rule::Uni {
                         ch: '"',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                     Rule::Uni {
                         ch: '\'',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                     Rule::Uni {
                         ch: '&',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                     Rule::Uni {
                         ch: '\\',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                 ];
                 let compiled_rules = Self::compile_encoder_rules(rules);
@@ -188,52 +175,39 @@ impl Encoder<JavaScriptEncoderSettings> for JavaScriptEncoder {
                     },
                     Rule::Uni {
                         ch: '\u{0000}',
-                        rt: RuleType::Esc {
-                            min: true,
-                            simple: false,
-                        },
+                        rt: RuleType::Esc(false),
+                    },
+                    Rule::Uni {
+                        ch: '\u{2028}',
+                        rt: RuleType::Esc(true)
+                    },
+                    Rule::Uni {
+                        ch: '\u{2029}',
+                        rt: RuleType::Esc(true)
                     },
                     Rule::Uni {
                         ch: '/',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                     Rule::Uni {
                         ch: '-',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                     Rule::Uni {
                         ch: '"',
-                        rt: RuleType::Esc {
-                            simple: false,
-                            min: false,
-                        },
+                        rt: RuleType::Esc(false),
                     },
                     Rule::Uni {
                         ch: '\'',
-                        rt: RuleType::Esc {
-                            simple: false,
-                            min: false,
-                        },
+                        rt: RuleType::Esc(false),
                     },
                     Rule::Uni {
                         ch: '&',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                     Rule::Uni {
                         ch: '\\',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                 ];
                 let compiled_rules = Self::compile_encoder_rules(rules);
@@ -243,7 +217,7 @@ impl Encoder<JavaScriptEncoderSettings> for JavaScriptEncoder {
                     invalid_char: ' ',
                     ascii_properties: valid_ascii_range,
                 }
-            },
+            }
             JavaScriptEncoderMode::Attribute => {
                 let rules = [
                     Rule::Uni {
@@ -267,39 +241,32 @@ impl Encoder<JavaScriptEncoderSettings> for JavaScriptEncoder {
                         rt: RuleType::Sub("\\r"),
                     },
                     Rule::Uni {
+                        ch: '\u{2028}',
+                        rt: RuleType::Esc(true)
+                    },
+                    Rule::Uni {
+                        ch: '\u{2029}',
+                        rt: RuleType::Esc(true)
+                    },
+                    Rule::Uni {
                         ch: '\u{0000}',
-                        rt: RuleType::Esc {
-                            min: true,
-                            simple: false,
-                        },
+                        rt: RuleType::Esc(false),
                     },
                     Rule::Uni {
                         ch: '"',
-                        rt: RuleType::Esc {
-                            simple: false,
-                            min: false,
-                        },
+                        rt: RuleType::Esc(false),
                     },
                     Rule::Uni {
                         ch: '\'',
-                        rt: RuleType::Esc {
-                            simple: false,
-                            min: false,
-                        },
+                        rt: RuleType::Esc(false),
                     },
                     Rule::Uni {
                         ch: '&',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                     Rule::Uni {
                         ch: '\\',
-                        rt: RuleType::Esc {
-                            simple: true,
-                            min: true,
-                        },
+                        rt: RuleType::Esc(true),
                     },
                 ];
                 let compiled_rules = Self::compile_encoder_rules(rules);
@@ -329,9 +296,16 @@ impl Encoder<JavaScriptEncoderSettings> for JavaScriptEncoder {
 #[cfg(test)]
 mod test {
     use crate::encoder::*;
-    use crate::java_script_encoder::{JavaScriptEncoder, JavaScriptEncoderMode, JavaScriptEncoderSettings};
+    use crate::java_script_encoder::{
+        JavaScriptEncoder, JavaScriptEncoderMode, JavaScriptEncoderSettings,
+    };
 
-    fn generic_tests(encoder: &JavaScriptEncoder) {
+    fn unicode_test<T: Sized>(encoder: &impl Encoder<T>) {
+        let simple_unicode_test = encoder.encode(&'\u{1234}'.to_string());
+        assert_eq!("\u{1234}", simple_unicode_test);
+    }
+
+    fn generic_tests<T: Sized>(encoder: &impl Encoder<T>) {
         let backspace_test = encoder.encode(&'\u{0008}'.to_string());
         assert_eq!("\\b", backspace_test);
 
@@ -349,7 +323,7 @@ mod test {
 
         let line_separator_test = encoder.encode(&'\u{2028}'.to_string());
         let line_separator_assertion = "\\u2028".to_string();
-        assert_eq!(line_separator_test, line_separator_test);
+        assert_eq!(line_separator_assertion, line_separator_test);
 
         let paragraph_separator_test = encoder.encode(&'\u{2029}'.to_string());
         let paragraph_separator_assertion = "\\u2029".to_string();
@@ -362,16 +336,245 @@ mod test {
         assert_eq!("ABCD", simple_upper_case_test);
     }
 
-    fn ascii_only_tests(encoder: &JavaScriptEncoder) {
+    fn ascii_only_tests<T: Sized>(encoder: &impl Encoder<T>) {
         let simple_unicode_test = encoder.encode(&'\u{1234}'.to_string());
         assert_eq!("\\u1234", simple_unicode_test);
 
         let high_ascii_test = encoder.encode(&'\u{ff}'.to_string());
         assert_eq!("\\xff", high_ascii_test);
     }
-    #[test]
-    fn test_encoder_trait() {
-        let encoder = JavaScriptEncoder::create('\\', ValidAsciiRange::ASCII, JavaScriptEncoderSettings {mode: JavaScriptEncoderMode::Block});
-        generic_tests(&encoder);
+
+    fn ascii_extended_tests<T: Sized>(encoder: &impl Encoder<T>) {
+        let high_ascii_test = encoder.encode(&'\u{00ff}'.to_string());
+        assert_eq!("\u{00ff}", high_ascii_test);
     }
+    #[test]
+    fn java_script_block_ascii_only() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::ASCII,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Block,
+            },
+        );
+
+        assert_eq!("\\\"", encoder.encode("\""));
+        assert_eq!("\\\'", encoder.encode("\'"));
+        assert_eq!("\\/", encoder.encode("/"));
+        assert_eq!("\\-", encoder.encode("-"));
+
+        generic_tests(&encoder);
+        ascii_only_tests(&encoder);
+    }
+
+    #[test]
+    fn java_script_block_ascii_extended() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::ASCIIExtended,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Block,
+            },
+        );
+
+        assert_eq!("\\\"", encoder.encode("\""));
+        assert_eq!("\\\'", encoder.encode("\'"));
+        assert_eq!("\\/", encoder.encode("/"));
+
+        generic_tests(&encoder);
+        ascii_extended_tests(&encoder);
+    }
+
+    #[test]
+    fn java_script_block_no_restrict() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::NoRestrict,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Block,
+            },
+        );
+
+        assert_eq!("\\\"", encoder.encode("\""));
+        assert_eq!("\\\'", encoder.encode("\'"));
+        assert_eq!("\\/", encoder.encode("/"));
+
+        generic_tests(&encoder);
+        unicode_test(&encoder);
+    }
+
+    #[test]
+    fn java_script_source_ascii_only() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::ASCII,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Source,
+            },
+        );
+
+        assert_eq!("\\\"", encoder.encode("\""));
+        assert_eq!("\\\'", encoder.encode("\'"));
+        assert_eq!("\\x26", encoder.encode("&"));
+        assert_eq!("/", encoder.encode("/"));
+
+        generic_tests(&encoder);
+        ascii_only_tests(&encoder);
+    }
+
+    #[test]
+    fn java_script_source_ascii_extended() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::ASCIIExtended,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Source,
+            },
+        );
+
+        assert_eq!("\\\"", encoder.encode("\""));
+        assert_eq!("\\\'", encoder.encode("\'"));
+        assert_eq!("\\x26", encoder.encode("&"));
+        assert_eq!("/", encoder.encode("/"));
+
+        generic_tests(&encoder);
+        ascii_extended_tests(&encoder);
+    }
+
+    #[test]
+    fn java_script_source_no_restrict() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::NoRestrict,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Source,
+            },
+        );
+
+        assert_eq!("\\\"", encoder.encode("\""));
+        assert_eq!("\\\'", encoder.encode("\'"));
+        assert_eq!("\\x26", encoder.encode("&"));
+        assert_eq!("/", encoder.encode("/"));
+
+        generic_tests(&encoder);
+        unicode_test(&encoder);
+    }
+
+    //////////////////////////////////////////////////
+
+    #[test]
+    fn java_script_html_ascii_only() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::ASCII,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Html,
+            },
+        );
+
+        assert_eq!("\\x22", encoder.encode("\""));
+        assert_eq!("\\x27", encoder.encode("\'"));
+        assert_eq!("\\/", encoder.encode("/"));
+        assert_eq!("\\-", encoder.encode("-"));
+
+
+        generic_tests(&encoder);
+        ascii_only_tests(&encoder);
+    }
+
+    #[test]
+    fn java_script_html_ascii_extended() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::ASCIIExtended,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Html,
+            },
+        );
+
+        assert_eq!("\\x22", encoder.encode("\""));
+        assert_eq!("\\x27", encoder.encode("\'"));
+        assert_eq!("\\/", encoder.encode("/"));
+        assert_eq!("\\-", encoder.encode("-"));
+
+        generic_tests(&encoder);
+        ascii_extended_tests(&encoder);
+    }
+
+    #[test]
+    fn java_script_html_no_restrict() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::NoRestrict,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Html,
+            },
+        );
+
+        assert_eq!("\\x22", encoder.encode("\""));
+        assert_eq!("\\x27", encoder.encode("\'"));
+        assert_eq!("\\/", encoder.encode("/"));
+        assert_eq!("\\-", encoder.encode("-"));
+
+        generic_tests(&encoder);
+        unicode_test(&encoder);
+    }
+
+    ////////////////////////////////////////////////////////////////////
+
+    #[test]
+    fn java_script_attribute_ascii_only() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::ASCII,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Attribute,
+            },
+        );
+
+        assert_eq!("\\x22", encoder.encode("\""));
+        assert_eq!("\\x27", encoder.encode("\'"));
+        assert_eq!("/", encoder.encode("/"));
+
+
+        generic_tests(&encoder);
+        ascii_only_tests(&encoder);
+    }
+
+    #[test]
+    fn java_script_attribute_ascii_extended() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::ASCIIExtended,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Attribute,
+            },
+        );
+
+        assert_eq!("\\x22", encoder.encode("\""));
+        assert_eq!("\\x27", encoder.encode("\'"));
+        assert_eq!("/", encoder.encode("/"));
+
+        generic_tests(&encoder);
+        ascii_extended_tests(&encoder);
+    }
+
+    #[test]
+    fn java_script_attribute_no_restrict() {
+        let encoder = JavaScriptEncoder::create(
+            '\\',
+            ValidAsciiRange::NoRestrict,
+            JavaScriptEncoderSettings {
+                mode: JavaScriptEncoderMode::Attribute,
+            },
+        );
+
+        assert_eq!("\\x22", encoder.encode("\""));
+        assert_eq!("\\x27", encoder.encode("\'"));
+        assert_eq!("/", encoder.encode("/"));
+
+        generic_tests(&encoder);
+        unicode_test(&encoder);
+    }
+
 }
