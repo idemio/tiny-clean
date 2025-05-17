@@ -1,3 +1,5 @@
+[![codecov](https://codecov.io/gh/idemio/tiny-clean/branch/main/graph/badge.svg)](https://codecov.io/gh/idemio/tiny-clean)
+
 # Tiny Clean
 A light-weight high-performance string sanitizers for common use cases.
 
