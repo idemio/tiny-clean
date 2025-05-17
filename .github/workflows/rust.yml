@@ -20,7 +20,7 @@ jobs:
           override: true
       - uses: katyo/publish-crates@v2
         with:
-          dry-run: ${{ github.event_name != 'push' }}
+          dry-run: true
   build:
     runs-on: ubuntu-latest
     steps:
