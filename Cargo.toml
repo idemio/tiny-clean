@@ -1,21 +1,19 @@
 [package]
 name = "tiny-clean"
 version = "0.1.0"
+authors = [" Kalev Gonvick kalev.gonvick@idemio.dev"]
 edition = "2024"
-description = "A lightweight, high-performance string sanitizer with configurable rules."
-
-categories = ["algorithms", "development-tools", "text-processing"]
-
-keywords = ["text", "sanitizer", "encoder", "string-manipulation", "utility"]
+license = "Apache-2.0"
+repository = "https://github.com/idemio/tiny-clean"
 readme = "README.md"
+
+description = "A lightweight, high-performance string sanitizer with configurable rules."
+categories = ["algorithms", "development-tools", "text-processing"]
+keywords = ["text", "sanitizer", "encoder", "string-manipulation", "utility"]
 
 [profile.release]
 strip = "symbols"
 opt-level = 3
-
-[dependencies]
-log = "0.4.27"
-fnv = "1.0.7"
 
 [dev-dependencies]
 criterion = "0.5.1"
