@@ -1,3 +1,4 @@
+use crate::common::{char_bucket, char_mask, encode_as_hex_byte, encode_as_unicode};
 use crate::encoder::{CompiledEncoderRules, Encoder, Rule, RuleType, ValidAsciiRange};
 
 pub enum JavaScriptEncoderMode {
@@ -288,8 +289,104 @@ impl Encoder<JavaScriptEncoderSettings> for JavaScriptEncoder {
         self.escape_char
     }
 
+    fn invalid_char(&self) -> char {
+        self.invalid_char
+    }
+
     fn ascii_properties(&self) -> &ValidAsciiRange {
         &self.ascii_properties
+    }
+
+    fn encode(&self, input: &str) -> String {
+        // TODO bench mark this to find best ratio
+        let init_capacity = (u16::MAX / 2)
+            .min((self.compiled_rules().output_buffer_max_len * input.len()) as u16)
+            as usize;
+        let mut output = String::with_capacity(init_capacity);
+
+        for character in input.chars() {
+            // Fast route with ascii mask
+            if (character as u32) < 256 {
+                let bucket = char_bucket(character);
+                let mask = char_mask(character);
+
+                // Check if there is a rule defined for the character
+                if self.compiled_rules().valid_ascii_mask[bucket] & mask == 0 {
+                    if self.compiled_rules().encode_map.contains_key(&character) {
+                        let encode_option =
+                            self.compiled_rules().encode_map.get(&character).unwrap();
+
+                        if *encode_option {
+                            output.push(self.escape_char());
+                            output.push(character);
+                            continue;
+                        }
+
+                        if character as u32 <= 0xFF {
+                            encode_as_hex_byte(self.escape_char(), &mut output, character);
+                            continue;
+                        } else {
+                            encode_as_unicode(self.escape_char(), &mut output, character);
+                            continue;
+                        }
+                    } else if self.compiled_rules().replace_map.contains_key(&character) {
+                        let replace = self.compiled_rules().replace_map.get(&character).unwrap();
+                        output.push_str(replace);
+                        continue;
+                    } else if self.compiled_rules().invalid_set.contains(&character) {
+                        output.push(self.invalid_char());
+                        continue;
+                    }
+                } else {
+                    match self.ascii_properties() {
+                        ValidAsciiRange::ASCII => {
+                            if (character as u32) < 127 {
+                                output.push(character);
+                                continue;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            } else if self.compiled_rules().replace_map.contains_key(&character) {
+                let replace = self.compiled_rules().replace_map.get(&character).unwrap();
+                output.push_str(replace);
+                continue;
+            } else if self.compiled_rules().encode_map.contains_key(&character) {
+                if character as u32 <= 0xFF {
+                    encode_as_hex_byte(self.escape_char(), &mut output, character);
+                    continue;
+                } else {
+                    encode_as_unicode(self.escape_char(), &mut output, character);
+                    continue;
+                }
+            } else if self.compiled_rules().invalid_set.contains(&character) {
+                output.push(self.invalid_char());
+                continue;
+            }
+
+            match self.ascii_properties() {
+                ValidAsciiRange::NoRestrict => {
+                    output.push(character);
+                }
+                ValidAsciiRange::ASCIIExtended => {
+                    if (character as u32) > 0xFF {
+                        encode_as_unicode(self.escape_char(), &mut output, character);
+                    } else {
+                        output.push(character);
+                    }
+                }
+                ValidAsciiRange::ASCII => {
+                    if character as u32 <= 0xFF {
+                        encode_as_hex_byte(self.escape_char(), &mut output, character);
+                    } else {
+                        encode_as_unicode(self.escape_char(), &mut output, character);
+                    }
+                }
+            }
+        }
+        output.shrink_to_fit();
+        output
     }
 }
 
@@ -460,8 +557,6 @@ mod test {
         unicode_test(&encoder);
     }
 
-    //////////////////////////////////////////////////
-
     #[test]
     fn java_script_html_ascii_only() {
         let encoder = JavaScriptEncoder::create(
@@ -519,8 +614,6 @@ mod test {
         generic_tests(&encoder);
         unicode_test(&encoder);
     }
-
-    ////////////////////////////////////////////////////////////////////
 
     #[test]
     fn java_script_attribute_ascii_only() {

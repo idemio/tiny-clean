@@ -1,5 +1,5 @@
 use crate::common::{HEX, HEX_MASK, HEX_SHIFT, char_bucket, char_mask};
-use fnv::FnvHashMap;
+use fnv::{FnvHashMap, FnvHashSet};
 
 /// Defines the range of ASCII characters considered valid during processing.
 ///
@@ -48,6 +48,7 @@ pub enum ValidAsciiRange {
 /// for precise behavior through either direct substitution or specific escape sequences.
 #[derive(Clone, Debug)]
 pub enum RuleType {
+    Inv,
     /// Represents an escape rule defining how a character should be escaped, with additional metadata.
     ///
     /// # Fields
@@ -152,7 +153,10 @@ pub enum Rule {
     ///     rt: RuleType::Esc(true),
     /// };
     /// ```
-    Uni { ch: char, rt: RuleType },
+    Uni {
+        ch: char,
+        rt: RuleType,
+    },
 }
 
 /// A collection of precompiled rules and data structures used to configure encoding behavior.
@@ -185,8 +189,11 @@ pub struct CompiledEncoderRules {
     /// A mapping of characters to their corresponding encoding options.
     pub(crate) encode_map: FnvHashMap<char, bool>,
 
+    /// set of all characters to be replaced with the chosen 'invalid' character.
+    pub(crate) invalid_set: FnvHashSet<char>,
+
     /// Specifies the maximum allowable length for the output buffer in bytes.
-    pub(crate) output_buffer_max_len: usize,
+    pub(crate) output_buffer_max_len: usize
 }
 
 pub trait Encoder<C>
@@ -249,6 +256,7 @@ where
         let mut valid_mask = [u32::MAX; 8];
         let mut replace_chars: FnvHashMap<char, &'static str> = FnvHashMap::default();
         let mut encode_chars: FnvHashMap<char, bool> = FnvHashMap::default();
+        let mut invalid_chars: FnvHashSet<char> = FnvHashSet::default();
 
         // Track the longest replacement string. This ensures the output buffer is appropriately sized.
         let mut largest_replace = 1usize;
@@ -271,7 +279,7 @@ where
                         match rule_type {
                             RuleType::Esc(simple) => {
                                 // Process all characters in the range, unless they are in the exclusion list.
-                                for char in start..end {
+                                for char in start..=end {
                                     if exclude.as_ref().is_some_and(|excl| excl.contains(&char)) {
                                         continue;
                                     }
@@ -286,7 +294,7 @@ where
                                 }
                             }
                             RuleType::Sub(replace_string) => {
-                                for char in start..end {
+                                for char in start..=end {
                                     if exclude.as_ref().is_some_and(|excl| excl.contains(&char)) {
                                         continue;
                                     }
@@ -301,13 +309,24 @@ where
                                     let char_mask: u32 = !char_mask(char);
                                     valid_mask[bucket] &= char_mask;
                                     replace_chars.insert(char, replace_string);
+                                }
+                            }
+                            RuleType::Inv => {
+                                for char in start..=end {
+                                    if exclude.as_ref().is_some_and(|exl| exl.contains(&char)) {
+                                        continue;
+                                    }
+                                    let bucket: usize = char_bucket(char);
+                                    let char_mask: u32 = !char_mask(char);
+                                    valid_mask[bucket] &= char_mask;
+                                    invalid_chars.insert(char);
                                 }
                             }
                         }
                     } else {
                         match rule_type {
                             RuleType::Esc(simple) => {
-                                for char in start..end {
+                                for char in start..=end {
                                     if exclude.as_ref().is_some_and(|excl| excl.contains(&char)) {
                                         continue;
                                     }
@@ -315,7 +334,7 @@ where
                                 }
                             }
                             RuleType::Sub(replace_string) => {
-                                for char in start..end {
+                                for char in start..=end {
                                     if exclude.as_ref().is_some_and(|excl| excl.contains(&char)) {
                                         continue;
                                     }
@@ -323,6 +342,14 @@ where
                                     // Update the maximum length of a replacement string for buffer allocation.
                                     largest_replace = largest_replace.max(replace_string.len());
                                     replace_chars.insert(char, replace_string);
+                                }
+                            }
+                            RuleType::Inv => {
+                                for char in start..=end {
+                                    if exclude.as_ref().is_some_and(|exl| exl.contains(&char)) {
+                                        continue;
+                                    }
+                                    invalid_chars.insert(char);
                                 }
                             }
                         }
@@ -347,6 +374,12 @@ where
                                 valid_mask[bucket] &= char_mask;
                                 replace_chars.insert(c, replace_string);
                             }
+                            RuleType::Inv => {
+                                let bucket: usize = char_bucket(c);
+                                let char_mask: u32 = !char_mask(c);
+                                valid_mask[bucket] &= char_mask;
+                                invalid_chars.insert(c);
+                            }
                         }
                     } else {
                         match rule_type {
@@ -356,6 +389,9 @@ where
                             RuleType::Sub(replace_string) => {
                                 largest_replace = largest_replace.max(replace_string.len());
                                 replace_chars.insert(c, replace_string);
+                            }
+                            RuleType::Inv => {
+                                invalid_chars.insert(c);
                             }
                         }
                     }
@@ -367,11 +403,13 @@ where
             valid_ascii_mask: valid_mask,
             replace_map: replace_chars,
             encode_map: encode_chars,
-            output_buffer_max_len: largest_replace,
+            invalid_set: invalid_chars,
+            output_buffer_max_len: largest_replace
         }
     }
     fn compiled_rules(&self) -> &CompiledEncoderRules;
     fn escape_char(&self) -> char;
+    fn invalid_char(&self) -> char;
     fn ascii_properties(&self) -> &ValidAsciiRange;
 
     /// Encodes the input string according to the defined character encoding rules and returns the encoded result.
@@ -415,138 +453,7 @@ where
     ///
     /// ## Cleanup:
     /// - At the end, the output string is shrunk to fit the actual encoded content using `shrink_to_fit`.
-    fn encode(&self, input: &str) -> String {
+    fn encode(&self, input: &str) -> String;
 
-        // TODO - define a max length and min against (input_len * replace_max)
-        let mut output =
-            String::with_capacity(self.compiled_rules().output_buffer_max_len * input.len());
 
-        for character in input.chars() {
-            // Fast route with ascii mask
-            if (character as u32) < 256 {
-                let bucket = char_bucket(character);
-                let mask = char_mask(character);
-
-                // Check if there is a rule defined for the character
-                if self.compiled_rules().valid_ascii_mask[bucket] & mask == 0 {
-                    if self.compiled_rules().encode_map.contains_key(&character) {
-                        let encode_option =
-                            self.compiled_rules().encode_map.get(&character).unwrap();
-
-                        if *encode_option {
-                            output.push(self.escape_char());
-                            output.push(character);
-                            continue;
-                        }
-
-                        if character as u32 <= 0xFF {
-                            Self::encode_as_hex_byte(self.escape_char(), &mut output, character);
-                            continue;
-                        } else {
-                            Self::encode_as_unicode(self.escape_char(), &mut output, character);
-                            continue;
-                        }
-                    } else if self.compiled_rules().replace_map.contains_key(&character) {
-                        let replace = self.compiled_rules().replace_map.get(&character).unwrap();
-                        output.push_str(replace);
-                        continue;
-                    }
-                } else {
-                    match self.ascii_properties() {
-                        ValidAsciiRange::ASCII => {
-                            if (character as u32) < 127 {
-                                output.push(character);
-                                continue;
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-
-            } else if self.compiled_rules().replace_map.contains_key(&character) {
-                let replace = self.compiled_rules().replace_map.get(&character).unwrap();
-                output.push_str(replace);
-                continue;
-
-            } else if self.compiled_rules().encode_map.contains_key(&character) {
-                if character as u32 <= 0xFF {
-                    Self::encode_as_hex_byte(self.escape_char(), &mut output, character);
-                    continue;
-                } else {
-                    Self::encode_as_unicode(self.escape_char(), &mut output, character);
-                    continue;
-                }
-            }
-
-            match self.ascii_properties() {
-                ValidAsciiRange::NoRestrict => {
-                    output.push(character);
-                }
-                ValidAsciiRange::ASCIIExtended => {
-                    if (character as u32) > 0xFF {
-                        Self::encode_as_unicode(self.escape_char(), &mut output, character);
-                    } else {
-                        output.push(character);
-                    }
-                }
-                ValidAsciiRange::ASCII => {
-                    if character as u32 <= 0xFF {
-                        Self::encode_as_hex_byte(self.escape_char(), &mut output, character);
-                    } else {
-                        Self::encode_as_unicode(self.escape_char(), &mut output, character);
-                    }
-                }
-            }
-        }
-        output.shrink_to_fit();
-        output
-    }
-
-    /// Encodes a single character as a hexadecimal escape sequence and appends it to the output string.
-    ///
-    /// # Parameters
-    /// - `escape_char: char`: The prefix character used to denote the beginning of an escape sequence.
-    ///   Commonly, this would be a backslash (`'\\'`).
-    /// - `output: &mut String`: A mutable reference to the output string where the encoded hex sequence
-    ///   will be appended.
-    /// - `character: char`: The character to be encoded as a hexadecimal byte.
-    ///
-    /// # Behavior
-    /// - The function reserves enough space in the output string to accommodate the escape sequence (`4` characters).
-    /// - The escape sequence format is `"{escape_char}xHH"`, where `HH` represents the two-digit hexadecimal
-    ///   value of the input character.
-    /// - This function uses the constants `HEX`, `HEX_SHIFT`, and `HEX_MASK` to efficiently extract and format
-    ///   the hexadecimal digits.
-    #[inline]
-    fn encode_as_hex_byte(escape_char: char, output: &mut String, character: char) {
-        output.push(escape_char);
-        output.push('x');
-        output.push(HEX[(character as u32 >> HEX_SHIFT) as usize]);
-        output.push(HEX[(character as u32 & HEX_MASK) as usize]);
-    }
-
-    /// Encodes a single character as a Unicode escape sequence and appends it to the output string.
-    ///
-    /// # Parameters
-    /// - `escape_char: char`: The prefix character used to indicate the beginning of the escape sequence.
-    ///   Commonly, this would be a backslash (`'\\'`).
-    /// - `output: &mut String`: A mutable reference to the output string where the Unicode escape sequence
-    ///   will be appended.
-    /// - `character: char`: The character to be encoded as a Unicode escape sequence.
-    ///
-    /// # Behavior
-    /// - The function reserves enough space in the output string to accommodate the escape sequence (`6` characters).
-    /// - The escape sequence format is `"{escape_char}uHHHH"`, where `HHHH` represents the four-digit
-    ///   hexadecimal Unicode code point of the input character.
-    /// - Hexadecimal digits are efficiently calculated and appended to the output using bitwise operations
-    ///   and the `HEX` lookup table.
-    #[inline]
-    fn encode_as_unicode(escape_char: char, output: &mut String, character: char) {
-        output.push(escape_char);
-        output.push('u');
-        output.push(HEX[(character as u32 >> (3 * HEX_SHIFT)) as usize & HEX_MASK as usize]);
-        output.push(HEX[(character as u32 >> (2 * HEX_SHIFT)) as usize & HEX_MASK as usize]);
-        output.push(HEX[(character as u32 >> (1 * HEX_SHIFT)) as usize & HEX_MASK as usize]);
-        output.push(HEX[(character as u32 & HEX_MASK) as usize]);
-    }
 }
