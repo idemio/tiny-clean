@@ -7,24 +7,18 @@ Prevent xss by dropping in a simple utility to clean your input.
 - Allows for custom rules to define your own encoders.
 
 ## Usage
-```rust
-use tiny_clean::encoder::{Encoder, ValidAsciiRange};
-use tiny_clean::java_script_encoder::{
-    JavaScriptEncoder, JavaScriptEncoderMode, JavaScriptEncoderSettings,
-};
-
-let my_unsafe_data = r#"..."#
-
-// Javascript 'Block' Encoding
-let encoder = JavaScriptEncoder::create(
-    '\\',
-    ValidAsciiRange::ASCII,
-    JavaScriptEncoderSettings {
-        mode: JavaScriptEncoderMode::Block,
-    },
-);
-
-let my_clean_data = encoder.encode(&my_unsafe_data);
+```Rust
+    use tiny_clean::encoder::{Encoder, ValidAsciiRange};
+    use tiny_clean::java_script_encoder::{
+        JavaScriptEncoder, JavaScriptEncoderMode,
+    };
+    
+    let my_unsafe_data = r#"..."#
+    
+    // Javascript 'Block' Encoding
+    let encoder = JavaScriptEncoder::new(JavaScriptEncoderMode::Block, true);
+    
+    let my_clean_data = encoder.encode(&my_unsafe_data);
 
 
 ```
@@ -34,17 +28,46 @@ The following benchmarks were run on a machine with the following specs:
 - CPU: Intel Core i9-10850K @ 4.91GHz
 - Rust: 1.85.1
 
-| **Encoder Type**        | **Dataset** | **Restriction** | **Time**                          |
-|-------------------------|-------------|-----------------|-----------------------------------|
-| **JavaScript - Block**  | DS1         | ASCII Only      | [83.311 µs, 83.408 µs, 83.522 µs] |
-| **JavaScript - Block**  | DS1         | ASCII Extended  | [97.683 µs, 97.822 µs, 97.991 µs] |
-| **JavaScript - Block**  | DS1         | No Restrict     | [92.088 µs, 92.234 µs, 92.401 µs] |
-| **JavaScript - Block**  | DS2         | ASCII Only      | [303.65 µs, 304.06 µs, 304.57 µs] |
-| **JavaScript - Block**  | DS2         | ASCII Extended  | [347.35 µs, 348.92 µs, 350.71 µs] |
-| **JavaScript - Block**  | DS2         | No Restrict     | [338.12 µs, 338.58 µs, 339.10 µs] |
-| **JavaScript - Source** | DS1         | ASCII Only      | [76.488 µs, 76.585 µs, 76.704 µs] |
-| **JavaScript - Source** | DS1         | ASCII Extended  | [90.622 µs, 90.713 µs, 90.814 µs] |
-| **JavaScript - Source** | DS1         | No Restrict     | [83.998 µs, 84.073 µs, 84.167 µs] |
-| **JavaScript - Source** | DS2         | ASCII Only      | [285.13 µs, 285.91 µs, 286.82 µs] |
-| **JavaScript - Source** | DS2         | ASCII Extended  | [324.21 µs, 324.76 µs, 325.38 µs] |
-| **JavaScript - Source** | DS2         | No Restrict     | [309.12 µs, 309.62 µs, 310.23 µs] |
+### JavaScript Encoder
+| Encoder Settings          | Data Set   | Time Range (µs) |
+|---------------------------|------------|-----------------|
+| Block, ASCII Only         | Data Set 1 | 72.064 - 72.357 |
+| Block, ASCII Extended     | Data Set 1 | 72.348 - 72.696 |
+| Block, ASCII Only         | Data Set 2 | 241.73 - 243.53 |
+| Block, ASCII Extended     | Data Set 2 | 239.18 - 239.91 |
+| Source, ASCII Only        | Data Set 1 | 66.790 - 67.023 |
+| Source, ASCII Extended    | Data Set 1 | 67.016 - 67.246 |
+| Source, ASCII Only        | Data Set 2 | 217.54 - 218.34 |
+| Source, ASCII Extended    | Data Set 2 | 215.42 - 216.38 |
+| Html, ASCII Only          | Data Set 1 | 74.583 - 75.096 |
+| Html, ASCII Extended      | Data Set 1 | 74.237 - 74.447 |
+| Html, ASCII Only          | Data Set 2 | 242.57 - 244.40 |
+| Html, ASCII Extended      | Data Set 2 | 242.43 - 243.39 |
+| Attribute, ASCII Only     | Data Set 1 | 69.931 - 70.145 |
+| Attribute, ASCII Extended | Data Set 1 | 69.824 - 70.015 |
+| Attribute, ASCII Only     | Data Set 2 | 221.90 - 222.51 |
+| Attribute, ASCII Extended | Data Set 2 | 222.91 - 223.64 |
+
+### Uri Encoder
+
+| Encoder Settings | Data Set   | Time Range (µs) |
+|------------------|------------|-----------------|
+| FullUri          | Data Set 1 | 122.17 - 122.52 |
+| FullUri          | Data Set 2 | 362.05 - 365.21 |
+| Component        | Data Set 1 | 137.35 - 137.67 |
+| Component        | Data Set 2 | 372.54 - 374.13 |
+
+### Xml Encoder
+
+| Encoder Settings      | Data Set   | Time Range (µs) |
+|-----------------------|------------|-----------------|
+| Attribute             | Data Set 1 | 138.35 - 139.26 |
+| Attribute             | Data Set 2 | 298.04 - 299.57 |
+| All                   | Data Set 1 | 138.99 - 139.79 |
+| All                   | Data Set 2 | 300.50 - 301.73 |
+| Content               | Data Set 1 | 135.55 - 135.95 |
+| Content               | Data Set 2 | 295.20 - 296.15 |
+| SingleQuotedAttribute | Data Set 1 | 137.40 - 138.60 |
+| SingleQuotedAttribute | Data Set 2 | 293.27 - 294.44 |
+| DoubleQuotedAttribute | Data Set 1 | 137.19 - 137.76 |
+| DoubleQuotedAttribute | Data Set 2 | 296.32 - 297.35 |
