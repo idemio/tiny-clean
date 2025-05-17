@@ -19,15 +19,6 @@ pub struct UriEncoder {
 }
 impl UriEncoder {
     pub fn new(mode: UriEncoderMode) -> Self {
-        //  starting from '0' + 10 bits (aka 0-9)
-        let one_to_nine = ((1u32 << 10u32) - 1u32) << ('0' as u32 & 31u32);
-
-        //  starting from 'A' + 26 bits (aka A-Z)
-        let uppercase_a_z = ((1u32 << 26u32) - 1u32) << ('A' as u32 & 31u32);
-
-        //  starting from 'a' + 26 bits (aka a-z)
-        let lowercase_a_z = ((1u32 << 26u32) - 1u32) << ('a' as u32 & 31u32);
-
         let reserved_chars1 = ['!', '#', '$', '?', '&', '(', ')', '*', '+', ',', ':', ';', '=', '/', '\''];
         let mut uri_reserved_bucket1: u32 = 0;
         for reserved in reserved_chars1 {
@@ -39,6 +30,15 @@ impl UriEncoder {
         for reserved in reserved_chars2 {
             uri_reserved_bucket2 |= char_mask(reserved);
         }
+
+        //  starting from '0' + 10 bits (aka 0-9)
+        let one_to_nine = ((1u32 << 10u32) - 1u32) << ('0' as u32 & 31u32);
+
+        //  starting from 'A' + 26 bits (aka A-Z)
+        let uppercase_a_z = ((1u32 << 26u32) - 1u32) << ('A' as u32 & 31u32);
+
+        //  starting from 'a' + 26 bits (aka a-z)
+        let lowercase_a_z = ((1u32 << 26u32) - 1u32) << ('a' as u32 & 31u32);
 
         let uri_unreserved_bucket1 =  one_to_nine | char_mask('-') | char_mask('.');
         let uri_unreserved_bucket2 = uppercase_a_z | char_mask('_');
@@ -83,15 +83,20 @@ impl UriEncoder {
                     result.push(U_HEX[(c as u32 & HEX_MASK) as usize]);
                     continue;
                 }
+
             } else if c as u32 <= MAX_UTF8_2_BYTE {
+
                 let b1 = UTF8_2_BYTE_FIRST_MSB | (c as u32 >> UTF8_SHIFT);
                 result.push('%');
                 result.push(U_HEX[(b1 >> HEX_SHIFT) as usize]);
                 result.push(U_HEX[(b1 & HEX_MASK) as usize]);
+
                 let b2 = UTF8_BYTE_MSB | (c as u32 & UTF8_MASK);
                 result.push('%');
                 result.push(U_HEX[(b2 >> HEX_SHIFT) as usize]);
                 result.push(U_HEX[(b2 & HEX_MASK) as usize]);
+
+
             } else if c as u32 <= 0xFFFF {
 
                 let b1 = UTF8_3_BYTE_FIRST_MSB | (c as u32 >> (2 * UTF8_SHIFT));

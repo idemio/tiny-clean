@@ -1,20 +1,17 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use tiny_clean::encoder::{Encoder, ValidAsciiRange};
-use tiny_clean::java_script_encoder::{
-    JavaScriptEncoder, JavaScriptEncoderMode, JavaScriptEncoderSettings,
-};
-use tiny_clean::java_script_encoder_v2::*;
+use tiny_clean::encoder::{Encoder};
+use tiny_clean::java_script_encoder::*;
 
 fn java_script_encode_benches(c: &mut Criterion) {
     let bench_data1 = std::fs::read_to_string("./benches/data/benchmark-data-1.txt").unwrap();
     let bench_data2 = std::fs::read_to_string("./benches/data/benchmark-data-2.txt").unwrap();
 
-    let encoder = OldEncoder::new(Mode::Block, true);
+    let encoder = JavaScriptEncoder::new(Mode::Block, true);
     c.bench_function("JavaScriptEncoder - Block - ASCII Only - DS1", |b| {
         b.iter(|| encoder.encode(std::hint::black_box(&bench_data1)))
     });
 
-    let encoder = OldEncoder::new(Mode::Block, false);
+    let encoder = JavaScriptEncoder::new(Mode::Block, false);
     c.bench_function("JavaScriptEncoder - Block - ASCII Extended - DS1", |b| {
         b.iter(|| encoder.encode(std::hint::black_box(&bench_data1)))
     });
