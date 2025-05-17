@@ -1,7 +1,7 @@
 use crate::common::{HEX, HEX_MASK, HEX_SHIFT, char_bucket, char_mask, encode_as_hex_byte, encode_as_unicode, dump_masks_to_ascii};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Mode {
+pub enum JavaScriptEncoderMode {
     Source,
     Block,
     Html,
@@ -15,7 +15,7 @@ pub struct JavaScriptEncoder {
 }
 
 impl JavaScriptEncoder {
-    pub fn new(mode: Mode, ascii_only: bool) -> Self {
+    pub fn new(mode: JavaScriptEncoderMode, ascii_only: bool) -> Self {
         let mut valid_masks = [
             0,
             u32::MAX & !(char_mask('\'') | char_mask('"')),
@@ -27,12 +27,12 @@ impl JavaScriptEncoder {
             },
         ];
         // For BLOCK or HTML mode, also escape '/' and '-'
-        if mode == Mode::Block || mode == Mode::Html {
+        if mode == JavaScriptEncoderMode::Block || mode == JavaScriptEncoderMode::Html {
             valid_masks[1] &= !(char_mask('/') | char_mask('-'));
         }
 
         // For all modes except SOURCE, escape '&'
-        if mode != Mode::Source {
+        if mode != JavaScriptEncoderMode::Source {
             valid_masks[1] &= !char_mask('&');
         }
 
@@ -40,7 +40,7 @@ impl JavaScriptEncoder {
             dump_masks_to_ascii(&valid_masks);
         }
 
-        let hex_encode_quotes = mode == Mode::Attribute || mode == Mode::Html;
+        let hex_encode_quotes = mode == JavaScriptEncoderMode::Attribute || mode == JavaScriptEncoderMode::Html;
         JavaScriptEncoder {
             ascii_only,
             valid_masks,
@@ -122,7 +122,7 @@ impl JavaScriptEncoder {
 #[cfg(test)]
 mod test {
 
-    use crate::java_script_encoder::{JavaScriptEncoder, Mode};
+    use crate::java_script_encoder::{JavaScriptEncoder, JavaScriptEncoderMode};
     fn generic_tests(encoder: &JavaScriptEncoder) {
         assert_eq!("\\b", encoder.encode("\u{8}"));
         assert_eq!("\\t", encoder.encode("\t"));
@@ -145,7 +145,7 @@ mod test {
     }
     #[test]
     fn t_java_script_block_ascii_only() {
-        let encoder = JavaScriptEncoder::new(Mode::Block, true);
+        let encoder = JavaScriptEncoder::new(JavaScriptEncoderMode::Block, true);
         assert_eq!("\\\"", encoder.encode("\""));
         assert_eq!("\\\'", encoder.encode("\'"));
         assert_eq!("\\/", encoder.encode("/"));
@@ -157,7 +157,7 @@ mod test {
 
     #[test]
     fn t_java_script_block_ascii_extended() {
-        let encoder = JavaScriptEncoder::new(Mode::Block, false);
+        let encoder = JavaScriptEncoder::new(JavaScriptEncoderMode::Block, false);
         assert_eq!("\\\"", encoder.encode("\""));
         assert_eq!("\\\'", encoder.encode("\'"));
         assert_eq!("\\x26", encoder.encode("&"));
@@ -168,7 +168,7 @@ mod test {
 
     #[test]
     fn t_java_script_source_ascii_only() {
-        let encoder = JavaScriptEncoder::new(Mode::Source, true);
+        let encoder = JavaScriptEncoder::new(JavaScriptEncoderMode::Source, true);
         assert_eq!("\\\"", encoder.encode("\""));
         assert_eq!("\\\'", encoder.encode("\'"));
         assert_eq!("/", encoder.encode("/"));
@@ -178,7 +178,7 @@ mod test {
 
     #[test]
     fn t_java_script_source_ascii_extended() {
-        let encoder = JavaScriptEncoder::new(Mode::Source, false);
+        let encoder = JavaScriptEncoder::new(JavaScriptEncoderMode::Source, false);
         assert_eq!("\\\"", encoder.encode("\""));
         assert_eq!("\\\'", encoder.encode("\'"));
         assert_eq!("/", encoder.encode("/"));
@@ -188,7 +188,7 @@ mod test {
 
     #[test]
     fn t_java_script_html_ascii_only() {
-        let encoder = JavaScriptEncoder::new(Mode::Html, true);
+        let encoder = JavaScriptEncoder::new(JavaScriptEncoderMode::Html, true);
         assert_eq!("\\x22", encoder.encode("\""));
         assert_eq!("\\x27", encoder.encode("\'"));
         assert_eq!("\\/", encoder.encode("/"));
@@ -200,7 +200,7 @@ mod test {
 
     #[test]
     fn t_java_script_html_ascii_extended() {
-        let encoder = JavaScriptEncoder::new(Mode::Html, false);
+        let encoder = JavaScriptEncoder::new(JavaScriptEncoderMode::Html, false);
         assert_eq!("\\x22", encoder.encode("\""));
         assert_eq!("\\x27", encoder.encode("\'"));
         assert_eq!("\\/", encoder.encode("/"));
@@ -212,7 +212,7 @@ mod test {
 
     #[test]
     fn t_java_script_attribute_ascii_only() {
-        let encoder = JavaScriptEncoder::new(Mode::Attribute, true);
+        let encoder = JavaScriptEncoder::new(JavaScriptEncoderMode::Attribute, true);
         assert_eq!("\\x22", encoder.encode("\""));
         assert_eq!("\\x27", encoder.encode("\'"));
         assert_eq!("/", encoder.encode("/"));
@@ -223,7 +223,7 @@ mod test {
 
     #[test]
     fn t_java_script_attribute_ascii_extended() {
-        let encoder = JavaScriptEncoder::new(Mode::Attribute, false);
+        let encoder = JavaScriptEncoder::new(JavaScriptEncoderMode::Attribute, false);
         assert_eq!("\\x22", encoder.encode("\""));
         assert_eq!("\\x27", encoder.encode("\'"));
         assert_eq!("/", encoder.encode("/"));
