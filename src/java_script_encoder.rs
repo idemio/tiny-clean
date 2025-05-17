@@ -1,4 +1,4 @@
-use crate::common::{HEX, HEX_MASK, HEX_SHIFT, char_bucket, char_mask, encode_as_hex_byte, encode_as_unicode, dump_masks_to_ascii};
+use crate::common::{char_bucket, char_mask, encode_as_hex_byte, encode_as_unicode, dump_masks_to_ascii};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum JavaScriptEncoderMode {
