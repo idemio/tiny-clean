@@ -1,10 +1,10 @@
 # Tiny Clean
-A light-weight high-performance string sanitizer with customizable rules. 
-Prevent xss by dropping in a simple utility to clean your input.
+A light-weight high-performance string sanitizers for common use cases.
 
 ## Features
-- Use built in configurations to sanitize HTML, JavaScript, XML, and more. 
-- Allows for custom rules to define your own encoders.
+- Java Script Encoder
+- Xml Encoder
+- Uri Encoder 
 
 ## Usage
 ```Rust
