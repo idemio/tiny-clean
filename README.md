@@ -1,5 +1,5 @@
 [![codecov](https://codecov.io/gh/idemio/tiny-clean/branch/main/graph/badge.svg)](https://codecov.io/gh/idemio/tiny-clean)
-
+[![CI Status](https://github.com/idemio/tiny-clean/workflows/Rust/badge.svg)](https://github.com/idemio/tiny-clean/actions)
 # Tiny Clean
 A light-weight high-performance string sanitizers for common use cases.
 
