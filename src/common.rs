@@ -17,8 +17,8 @@ pub(crate) const U_HEX: [char; 16] = [
 /// - Shifts the value `1` to the left by the result of the calculation, creating a bitmask where
 ///   only one specific bit is set.
 ///
-#[inline]
-pub(crate) const fn char_mask(c: char) -> u32 {
+#[inline(always)]
+pub const fn char_mask(c: char) -> u32 {
     1 << (c as u32 & 31)
 }
 
@@ -28,8 +28,8 @@ pub(crate) const fn char_mask(c: char) -> u32 {
 /// - Converts the character `c` into its Unicode scalar value (`u32`).
 /// - Performs a bitwise right shift by 5 (`c as u32 >> 5`), which is equivalent to integer division by 32.
 /// - Casts the resulting value to `usize` for use as an index or bucket identifier in further operations.
-#[inline]
-pub(crate) const fn char_bucket(c: char) -> usize {
+#[inline(always)]
+pub const fn char_bucket(c: char) -> usize {
     (c as u32 >> 5) as usize
 }
 
@@ -48,8 +48,8 @@ pub(crate) const fn char_bucket(c: char) -> usize {
 ///   value of the input character.
 /// - This function uses the constants `HEX`, `HEX_SHIFT`, and `HEX_MASK` to efficiently extract and format
 ///   the hexadecimal digits.
-#[inline]
-pub(crate) fn encode_as_hex_byte(escape_char: char, output: &mut String, character: char) {
+#[inline(always)]
+pub fn encode_as_hex_byte(escape_char: char, output: &mut String, character: char) {
     output.push(escape_char);
     output.push('x');
     output.push(HEX[(character as u32 >> HEX_SHIFT) as usize]);
@@ -71,8 +71,8 @@ pub(crate) fn encode_as_hex_byte(escape_char: char, output: &mut String, charact
 ///   hexadecimal Unicode code point of the input character.
 /// - Hexadecimal digits are efficiently calculated and appended to the output using bitwise operations
 ///   and the `HEX` lookup table.
-#[inline]
-pub(crate) fn encode_as_unicode(escape_char: char, output: &mut String, character: char) {
+#[inline(always)]
+pub fn encode_as_unicode(escape_char: char, output: &mut String, character: char) {
     output.push(escape_char);
     output.push('u');
     output.push(HEX[(character as u32 >> (3 * HEX_SHIFT)) as usize & HEX_MASK as usize]);
@@ -81,7 +81,15 @@ pub(crate) fn encode_as_unicode(escape_char: char, output: &mut String, characte
     output.push(HEX[(character as u32 & HEX_MASK) as usize]);
 }
 
-pub(crate) fn dump_masks_to_ascii(masks: &[u32; 4]) {
+#[inline(always)]
+pub fn create_mask<const N: usize>(chars: [char; N]) -> u32 {
+    let mut mask = 0;
+    chars.iter().for_each(|char| mask |= char_mask(*char));
+    mask
+}
+
+#[cfg(debug_assertions)]
+pub fn dump_masks_to_ascii(masks: &[u32; 4]) {
     println!("Dumping Mask Values (0-127)");
     for char in '\u{0000}'..='\u{007F}' {
         let bucket = char_bucket(char);
