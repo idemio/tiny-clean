@@ -1,4 +1,4 @@
-use crate::common::{HEX_MASK, HEX_SHIFT, U_HEX, char_bucket, char_mask};
+use crate::common::{HEX_MASK, HEX_SHIFT, U_HEX, char_bucket, char_mask, create_mask};
 
 /// 0111_1111_1111 --> highest 2x utf 8 bytes
 /// 0000_1000_0000 --> most sig. utf8 byte
@@ -16,6 +16,7 @@ const UTF8_4_BYTE_FIRST_MSB: u32 = 0b_0000_1111_0000;
 const UTF8_SHIFT: u32 = 0b_0000_0000_0110;
 const UTF8_MASK: u32 = 0b_0000_0011_1111;
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum UriEncoderMode {
     Component,
     FullUri,
@@ -50,20 +51,10 @@ impl UriEncoder {
                 Self { valid_masks }
             }
             UriEncoderMode::FullUri => {
-                let reserved_chars1 = [
+                let uri_reserved_bucket1: u32 = create_mask([
                     '!', '#', '$', '?', '&', '(', ')', '*', '+', ',', ':', ';', '=', '/', '\'',
-                ];
-                let mut uri_reserved_bucket1: u32 = 0;
-                for reserved in reserved_chars1 {
-                    uri_reserved_bucket1 |= char_mask(reserved);
-                }
-
-                let reserved_chars2 = ['[', ']', '@'];
-                let mut uri_reserved_bucket2: u32 = 0;
-                for reserved in reserved_chars2 {
-                    uri_reserved_bucket2 |= char_mask(reserved);
-                }
-
+                ]);
+                let uri_reserved_bucket2: u32 = create_mask(['[', ']', '@']);
                 let valid_masks = [
                     0,
                     uri_unreserved_bucket1 | uri_reserved_bucket1,

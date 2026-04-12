@@ -1,7 +1,6 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use tiny_clean::java_script_encoder::{JavaScriptEncoder, JavaScriptEncoderMode};
-use tiny_clean::uri_encoder::{UriEncoder, UriEncoderMode};
-use tiny_clean::xml_encoder::{XmlEncoder, XmlEncoderMode};
+
+use tiny_clean::{EncoderBuilder, UriEncoderMode, UriEncoder, XmlEncoderMode, XmlEncoder, JavaScriptEncoderMode, JavaScriptEncoder};
 
 fn xml_encode_benches(c: &mut Criterion) {
     let bench_data1 = std::fs::read_to_string("./benches/data/benchmark-data-1.txt").unwrap();

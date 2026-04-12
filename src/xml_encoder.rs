@@ -1,5 +1,6 @@
-use crate::common::{char_bucket, char_mask};
+use crate::common::{char_bucket, char_mask, create_mask};
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum XmlEncoderMode {
     All,
     Content,
@@ -17,11 +18,7 @@ impl XmlEncoder {
         let base_mask = char_mask('\r') | char_mask('\t') | char_mask('\n');
         match mode {
             XmlEncoderMode::All => {
-                let to_be_encoded = ['&', '<', '>', '\'', '"'];
-                let mut to_be_encoded_mask = 0u32;
-                for char in to_be_encoded {
-                    to_be_encoded_mask |= char_mask(char);
-                }
+                let to_be_encoded_mask = create_mask(['&', '<', '>', '\'', '"']);
                 let valid_masks = [
                     base_mask,
                     u32::MAX & !to_be_encoded_mask,
@@ -31,11 +28,7 @@ impl XmlEncoder {
                 Self {valid_masks}
             }
             XmlEncoderMode::Content => {
-                let to_be_encoded = ['&', '<', '>'];
-                let mut to_be_encoded_mask = 0u32;
-                for char in to_be_encoded {
-                    to_be_encoded_mask |= char_mask(char);
-                }
+                let to_be_encoded_mask = create_mask(['&', '<', '>']);
                 let valid_masks = [
                     base_mask,
                     u32::MAX & !to_be_encoded_mask,
@@ -45,11 +38,7 @@ impl XmlEncoder {
                 Self {valid_masks}
             }
             XmlEncoderMode::Attribute => {
-                let to_be_encoded = ['&', '<', '\'', '"'];
-                let mut to_be_encoded_mask = 0u32;
-                for char in to_be_encoded {
-                    to_be_encoded_mask |= char_mask(char);
-                }
+                let to_be_encoded_mask = create_mask(['&', '<', '\'', '"']);
                 let valid_masks = [
                     base_mask,
                     u32::MAX & !to_be_encoded_mask,
@@ -59,11 +48,7 @@ impl XmlEncoder {
                 Self {valid_masks}
             }
             XmlEncoderMode::SingleQuotedAttribute => {
-                let to_be_encoded = ['&', '<', '\''];
-                let mut to_be_encoded_mask = 0u32;
-                for char in to_be_encoded {
-                    to_be_encoded_mask |= char_mask(char);
-                }
+                let to_be_encoded_mask = create_mask(['&', '<', '\'']);
                 let valid_masks = [
                     base_mask,
                     u32::MAX & !to_be_encoded_mask,
@@ -73,11 +58,7 @@ impl XmlEncoder {
                 Self {valid_masks}
             }
             XmlEncoderMode::DoubleQuotedAttribute => {
-                let to_be_encoded = ['&', '<', '"'];
-                let mut to_be_encoded_mask = 0u32;
-                for char in to_be_encoded {
-                    to_be_encoded_mask |= char_mask(char);
-                }
+                let to_be_encoded_mask = create_mask(['&', '<', '"']);
                 let valid_masks = [
                     base_mask,
                     u32::MAX & !to_be_encoded_mask,

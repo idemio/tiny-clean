@@ -1,4 +1,5 @@
-use crate::common::{char_bucket, char_mask, encode_as_hex_byte, encode_as_unicode, dump_masks_to_ascii};
+use crate::common::{char_bucket, char_mask, encode_as_hex_byte, encode_as_unicode};
+
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum JavaScriptEncoderMode {
@@ -8,10 +9,11 @@ pub enum JavaScriptEncoderMode {
     Attribute,
 }
 
+#[non_exhaustive]
 pub struct JavaScriptEncoder {
-    ascii_only: bool,
-    valid_masks: [u32; 4],
-    hex_encode_quotes: bool,
+    pub ascii_only: bool,
+    pub valid_masks: [u32; 4],
+    pub hex_encode_quotes: bool,
 }
 
 impl JavaScriptEncoder {
@@ -36,9 +38,8 @@ impl JavaScriptEncoder {
             valid_masks[1] &= !char_mask('&');
         }
 
-        if cfg!(debug_assertions) {
-            dump_masks_to_ascii(&valid_masks);
-        }
+        #[cfg(debug_assertions)]
+        crate::common::dump_masks_to_ascii(&valid_masks);
 
         let hex_encode_quotes = mode == JavaScriptEncoderMode::Attribute || mode == JavaScriptEncoderMode::Html;
         JavaScriptEncoder {
