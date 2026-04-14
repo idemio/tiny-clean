@@ -1,4 +1,5 @@
-use crate::common::{HEX_MASK, HEX_SHIFT, U_HEX, char_bucket, char_mask, create_mask};
+use crate::common::{char_bucket, char_mask, create_mask, HEX_MASK, HEX_SHIFT, U_HEX};
+use type_state_builder::TypeStateBuilder;
 
 /// 0111_1111_1111 --> highest 2x utf 8 bytes
 /// 0000_1000_0000 --> most sig. utf8 byte
@@ -16,8 +17,15 @@ const UTF8_4_BYTE_FIRST_MSB: u32 = 0b_0000_1111_0000;
 const UTF8_SHIFT: u32 = 0b_0000_0000_0110;
 const UTF8_MASK: u32 = 0b_0000_0011_1111;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(TypeStateBuilder)]
+pub struct UriEncoderConfig {
+    #[builder(required)]
+    mode: UriEncoderMode,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub enum UriEncoderMode {
+    #[default]
     Component,
     FullUri,
 }
@@ -26,7 +34,7 @@ pub struct UriEncoder {
     valid_masks: [u32; 4],
 }
 impl UriEncoder {
-    pub fn new(mode: UriEncoderMode) -> Self {
+    pub fn new(config: UriEncoderConfig) -> Self {
         //  starting from '0' + 10 bits (aka 0-9)
         let one_to_nine = ((1u32 << 10u32) - 1u32) << ('0' as u32 & 31u32);
 
@@ -40,7 +48,7 @@ impl UriEncoder {
         let uri_unreserved_bucket2 = uppercase_a_z | char_mask('_');
         let uri_unreserved_bucket3 = lowercase_a_z | char_mask('~');
 
-        match mode {
+        match config.mode {
             UriEncoderMode::Component => {
                 let valid_masks = [
                     0,
@@ -138,6 +146,7 @@ impl UriEncoder {
 #[cfg(test)]
 mod test {
     use crate::uri_encoder::{UriEncoder, UriEncoderMode};
+    use crate::UriEncoderConfig;
 
     fn shared_test_cases(encoder: &UriEncoder) {
         assert_eq!("abcABC123", encoder.encode("abcABC123"));
@@ -158,7 +167,11 @@ mod test {
 
     #[test]
     fn test_component_encode() {
-        let encoder = UriEncoder::new(UriEncoderMode::Component);
+        let encoder = UriEncoder::new(
+            UriEncoderConfig::builder()
+                .mode(UriEncoderMode::Component)
+                .build(),
+        );
         assert_eq!("%3A", encoder.encode(":"));
         assert_eq!("%2F", encoder.encode("/"));
         assert_eq!("%3F", encoder.encode("?"));
@@ -182,7 +195,11 @@ mod test {
 
     #[test]
     fn test_full_uri_encode() {
-        let encoder = UriEncoder::new(UriEncoderMode::FullUri);
+        let encoder = UriEncoder::new(
+            UriEncoderConfig::builder()
+                .mode(UriEncoderMode::FullUri)
+                .build(),
+        );
         assert_eq!(
             "http://www.owasp.org/index.php?foo=bar&baz#fragment",
             encoder.encode("http://www.owasp.org/index.php?foo=bar&baz#fragment")

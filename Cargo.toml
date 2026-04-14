@@ -15,8 +15,11 @@ keywords = ["text", "sanitizer", "encoder", "string-manipulation", "utility"]
 strip = "symbols"
 opt-level = 3
 
+[dependencies]
+type-state-builder = "0.5.1"
+
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.8.2"
 
 [[bench]]
 name = "encode_benchmarks"
