@@ -1,7 +1,15 @@
 use crate::common::{char_bucket, char_mask, create_mask};
+use type_state_builder::TypeStateBuilder;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(TypeStateBuilder)]
+pub struct XmlEncoderConfig {
+    #[builder(required)]
+    mode: XmlEncoderMode,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub enum XmlEncoderMode {
+    #[default]
     All,
     Content,
     Attribute,
@@ -14,18 +22,18 @@ pub struct XmlEncoder {
 }
 
 impl XmlEncoder {
-    pub fn new(mode: XmlEncoderMode) -> Self {
+    pub fn new(config: XmlEncoderConfig) -> Self {
         let base_mask = char_mask('\r') | char_mask('\t') | char_mask('\n');
-        match mode {
+        match config.mode {
             XmlEncoderMode::All => {
                 let to_be_encoded_mask = create_mask(['&', '<', '>', '\'', '"']);
                 let valid_masks = [
                     base_mask,
                     u32::MAX & !to_be_encoded_mask,
                     u32::MAX,
-                    u32::MAX
+                    u32::MAX,
                 ];
-                Self {valid_masks}
+                Self { valid_masks }
             }
             XmlEncoderMode::Content => {
                 let to_be_encoded_mask = create_mask(['&', '<', '>']);
@@ -33,9 +41,9 @@ impl XmlEncoder {
                     base_mask,
                     u32::MAX & !to_be_encoded_mask,
                     u32::MAX,
-                    u32::MAX
+                    u32::MAX,
                 ];
-                Self {valid_masks}
+                Self { valid_masks }
             }
             XmlEncoderMode::Attribute => {
                 let to_be_encoded_mask = create_mask(['&', '<', '\'', '"']);
@@ -43,9 +51,9 @@ impl XmlEncoder {
                     base_mask,
                     u32::MAX & !to_be_encoded_mask,
                     u32::MAX,
-                    u32::MAX
+                    u32::MAX,
                 ];
-                Self {valid_masks}
+                Self { valid_masks }
             }
             XmlEncoderMode::SingleQuotedAttribute => {
                 let to_be_encoded_mask = create_mask(['&', '<', '\'']);
@@ -53,9 +61,9 @@ impl XmlEncoder {
                     base_mask,
                     u32::MAX & !to_be_encoded_mask,
                     u32::MAX,
-                    u32::MAX
+                    u32::MAX,
                 ];
-                Self {valid_masks}
+                Self { valid_masks }
             }
             XmlEncoderMode::DoubleQuotedAttribute => {
                 let to_be_encoded_mask = create_mask(['&', '<', '"']);
@@ -63,9 +71,9 @@ impl XmlEncoder {
                     base_mask,
                     u32::MAX & !to_be_encoded_mask,
                     u32::MAX,
-                    u32::MAX
+                    u32::MAX,
                 ];
-                Self {valid_masks}
+                Self { valid_masks }
             }
         }
     }
@@ -131,6 +139,7 @@ impl XmlEncoder {
 #[cfg(test)]
 mod test {
     use crate::xml_encoder::{XmlEncoder, XmlEncoderMode};
+    use crate::XmlEncoderConfig;
 
     fn generic_tests(encoder: &XmlEncoder) {
         assert_eq!("\u{fffd}", encoder.encode("\u{fffd}"));
@@ -138,7 +147,11 @@ mod test {
     }
     #[test]
     fn test_all_encode() {
-        let encoder = XmlEncoder::new(XmlEncoderMode::All);
+        let encoder = XmlEncoder::new(
+            XmlEncoderConfig::builder()
+                .mode(XmlEncoderMode::All)
+                .build(),
+        );
         assert_eq!("&amp;", encoder.encode("&"));
         assert_eq!("&gt;", encoder.encode(">"));
         assert_eq!("&lt;", encoder.encode("<"));
@@ -149,7 +162,11 @@ mod test {
 
     #[test]
     fn test_content_encode() {
-        let encoder = XmlEncoder::new(XmlEncoderMode::Content);
+        let encoder = XmlEncoder::new(
+            XmlEncoderConfig::builder()
+                .mode(XmlEncoderMode::Content)
+                .build(),
+        );
         assert_eq!("&amp;", encoder.encode("&"));
         assert_eq!("&gt;", encoder.encode(">"));
         assert_eq!("&lt;", encoder.encode("<"));
@@ -160,7 +177,11 @@ mod test {
 
     #[test]
     fn test_attribute_encode() {
-        let encoder = XmlEncoder::new(XmlEncoderMode::Attribute);
+        let encoder = XmlEncoder::new(
+            XmlEncoderConfig::builder()
+                .mode(XmlEncoderMode::Attribute)
+                .build(),
+        );
         assert_eq!("&amp;", encoder.encode("&"));
         assert_eq!(">", encoder.encode(">"));
         assert_eq!("&lt;", encoder.encode("<"));
@@ -171,7 +192,11 @@ mod test {
 
     #[test]
     fn test_single_quoted_encode() {
-        let encoder = XmlEncoder::new(XmlEncoderMode::SingleQuotedAttribute);
+        let encoder = XmlEncoder::new(
+            XmlEncoderConfig::builder()
+                .mode(XmlEncoderMode::SingleQuotedAttribute)
+                .build(),
+        );
         assert_eq!("&amp;", encoder.encode("&"));
         assert_eq!(">", encoder.encode(">"));
         assert_eq!("&lt;", encoder.encode("<"));
@@ -184,7 +209,11 @@ mod test {
 
     #[test]
     fn test_double_quoted_encode() {
-        let encoder = XmlEncoder::new(XmlEncoderMode::DoubleQuotedAttribute);
+        let encoder = XmlEncoder::new(
+            XmlEncoderConfig::builder()
+                .mode(XmlEncoderMode::DoubleQuotedAttribute)
+                .build(),
+        );
         assert_eq!("&amp;", encoder.encode("&"));
         assert_eq!(">", encoder.encode(">"));
         assert_eq!("&lt;", encoder.encode("<"));
